@@ -2,16 +2,24 @@
 h1 {
 	text-align: center;
 	font-weight: bold;
+	color: #f8d16e;
 }
 h2 {
 	text-align: center;
+	color: #f8d16e;
 }
 body {
     color: white;
 	font-size: 20;
 	text-shadow: 1px 1px 1px #000;
 	font-family: Tahoma;
-    background: url('/Images/hexabump.png');
+    /*background: url('/Images/hexabump.png');*/
+	background: url(Images/bg.jpg) no-repeat center center fixed; 
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;			
+	background-color: #4f4d47;	
 }
 
 td {
@@ -147,4 +155,11 @@ html, body, #map-canvas {
     margin: 0;
     padding: 0;
     height: 100%;
+}
+
+a, a:visited {
+	color: #ffeab0;
+}
+a:hover {
+	color: #fff;
 }
