@@ -1,20 +1,10 @@
-/* CSS declarations go here */
-h1 {
-	text-align: center;
-	font-size: 3.4em;
-	font-weight: bold;
-	color: #f8d16e;
+html, body, #map-canvas {
+    margin: 0;
+    padding: 0;
+    height: 100%;
 }
-h2 {
-	text-align: center;
-	color: #f8d16e;
-	font-size: 1.6em;
-}
-h3 {
-	text-align: center;
-	color: #ddd;
-	font-size: 1.6em;
-}
+
+html, body { height: 100%; }
 body {
     color: white;
 	font-size: 20;
@@ -28,7 +18,85 @@ body {
 	background-color: #4f4d47;	
 }
 
-td {
+#wrap { min-height: 100%; }
+
+#main {
+	overflow:auto;
+	padding-bottom: 98px; /* must be same height as the footer */
+}
+
+#footer {
+	position: relative;
+	margin-top: -98px; /* negative value of footer height */
+	height: 98px;
+	clear:both;
+}
+
+/*Opera Fix*/
+body:before
+{
+	content:"";
+	height:100%;
+	float:left;
+	width:0;
+	margin-top:-32767px;/
+}
+
+a, a:visited {
+	color: #ffeab0;
+}
+a:hover {
+	color: #fff;
+}
+
+.twitter {background-image:url('/img/twitter.png');background-repeat:no-repeat;height:38px;width:38px}
+.twitter:hover {background-image:url('/img/twitter_hover.png');}
+.facebook {background-image:url('/img/facebook.png');background-repeat:no-repeat;height:38px;width:38px}
+.facebook:hover {background-image:url('/img/facebook_hover.png');}
+
+.vires, .vires a:link, .vires a:visited, .vires a:hover, .vires a:active, .vires a:focus {
+	text-decoration: none;
+	padding-top:4px;
+	font-family: 'VT323', cursive;
+	color:#fff;
+	font-size:12px;
+	letter-spacing:3px;
+	text-shadow: 1px 1px 1px #000;
+}
+
+div#preloaded-images {
+	position: absolute;
+	overflow: hidden;
+	left: -9999px;
+	top: -9999px;
+	height: 1px;
+	width: 1px;
+}
+
+h1 {
+	padding-top: 16px;
+	text-align: center;
+	font-size: 3.4em;
+	font-weight: bold;
+	color: #f8d16e;
+}
+h2 {
+	text-align: center;
+	color: #f8d16e;
+	font-size: 1.6em;
+	line-height: 1.6em;
+}
+h3 {
+	text-align: center;
+	color: #ddd;
+	font-size: 1.6em;
+}
+
+#login-buttons {
+	font-size: 20px;
+}
+
+.container td {
 	margin: 25px;
 
 	/*border: 1px solid #eee;*/
@@ -38,7 +106,7 @@ td {
 	-moz-transition: 	all 0.25s ease;
 	-o-transition: 		all 0.25s ease;
 }
-th {
+.container th {
 	margin: 25px;
 
 	border: 1px solid #eee;
@@ -48,7 +116,7 @@ th {
 	-moz-transition: 	all 0.25s ease;
 	-o-transition: 		all 0.25s ease;
 }
-table {
+.container table {
 	color: #F0FFFF;
 	font-weight: bold;
 	border-collapse: separate;
@@ -59,22 +127,22 @@ table {
 
 	
 }
-tr {
+.container tr {
 	height: 39px;
 }
 
-th:first-child {
+.container th:first-child {
 	-webkit-border-top-left-radius: 6px;
 	-webkit-border-bottom-left-radius: 6px;
 	width: auto;
 }
 
-th:last-child {
+.container th:last-child {
 	-webkit-border-top-right-radius: 6px;
 	-webkit-border-bottom-right-radius: 6px;
 }		
 
-th {
+.container th {
 	background-color: #191919;
 	/*box-shadow: 7px 3px 10px 2px black;*/
 	padding: 5px;
@@ -82,7 +150,7 @@ th {
 	text-shadow: 1px 1px 1px #000;
 }
 
-tr > td:first-child {
+.container tr > td:first-child {
 
 	width: auto;
 	white-space: nowrap;
@@ -93,12 +161,12 @@ tr > td:first-child {
 	white-space: nowrap;
 }
 
-tr > td:last-child {
+.container tr > td:last-child {
 	-webkit-border-top-right-radius: 5px;
 	-webkit-border-bottom-right-radius: 5px;
 }
 
-td {
+.container td {
 	text-align: center;
 	padding: 5px;
 	margin: 5px;
@@ -106,7 +174,7 @@ td {
 	text-shadow: 1px 1px 1px #000;
 }
 
-th:hover {
+.container th:hover {
 	opacity: 1;
 	-webkit-box-shadow: inset 0px 0px 20px rgba(255,255,255,0.8);
 		-moz-box-shadow: 0px 0px 20px rgba(255,255,255,0.8);
@@ -156,16 +224,4 @@ th:hover {
 }
 #myModal .modal-body {
     height: 430px;
-}
-html, body, #map-canvas {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-}
-
-a, a:visited {
-	color: #ffeab0;
-}
-a:hover {
-	color: #fff;
 }

@@ -2,8 +2,7 @@ Bids = new Meteor.Collection("bids");
 Asks = new Meteor.Collection("asks");
 // Add a marker to the map and push to the array.
 
-
-function getLocation() {
+/*function getLocation() {
     navigator.geolocation.watchPosition(setLocation, noLocation);
 }
 function setLocation(position) {
@@ -12,14 +11,8 @@ function setLocation(position) {
 function noLocation() {
     alert('Could not find location');
     Session.set('location', {longitude: null, latitude: null});
-}
-function setGox(results) {
-    Session.set("gox", results);
-    data = JSON.parse(Session.get('gox').content);
-    Session.set('gox_sell', data.return.buy.display_short);
-    Session.set('gox_buy', data.return.sell.display_short);
-	Session.set('gox_last', data.return.sell.display_short);
-}
+}*/
+
 function click_input_add(kind) {
     var user = Meteor.user();
     if (user === null) {
@@ -28,13 +21,26 @@ function click_input_add(kind) {
     }
     var name = user.username;
     //var email = user.emails[0].address;
-    var price = parseFloat(document.getElementById(kind + '_price').value);
-    console.log(price);
-    var size = parseFloat(document.getElementById(kind + '_size').value);
-    console.log(size);
+	var price_str = document.getElementById(kind + '_price').value;
+	if(!price_str)
+	{
+        if (kind == 'ask') {
+            price_str = Session.get('gox_buy');
+        }
+		else {
+			price_str = Session.get('gox_sell');
+		}
+		if(price_str) price_str = price_str.substr(1);		
+    }
+    var price = parseFloat(price_str);
+    //console.log(price);
+	var size_str = document.getElementById(kind + '_size').value;
+    var size = parseFloat(size_str);
+    //console.log(size);
     //console.log("user.id is " + user._id);
 
-    if (price < .01 || size < .01) {
+    if (!price_str || !size_str || (price < .01) || (size < .01)) 
+	{
         alert('price or size too small');
     }
     else {
@@ -50,13 +56,21 @@ function click_input_add(kind) {
     document.getElementById(kind + '_size').value = '';
 }
 
+function setGox(results) {
+    Session.set("gox", results);
+    data = JSON.parse(Session.get('gox').content);
+    Session.set('gox_sell', data.return.buy.display_short);
+    Session.set('gox_buy', data.return.sell.display_short);
+	Session.set('gox_last', data.return.sell.display_short);
+}
+
 function refreshGox()
 {
-console.log("refreshGox");
+	//console.log("refreshGox");
     Meteor.http.get('http://data.mtgox.com/api/1/BTCUSD/ticker_fast', {}, function (error, result) {
         if (result.statusCode === 200) 
 		{
-console.log("refreshGox statusCode=200");
+			//console.log("refreshGox statusCode=200");
 			setGox(result);
 			updateExchangeRates();			
 		}
@@ -71,11 +85,18 @@ function refreshUSDILS()
 {
 	Meteor.call('getUSDILS', function(err, response) {
 		Session.set("USDILS", response);
+		updateExchangeRates();			
 	});	
 }
 
 function updateExchangeRates()
 {
+	if(!Session.get('gox_last'))
+	{
+		console.log("gox_last is null in updateExchangeRates");
+		return;
+	}
+	
 	var usdbtc_str = Session.get('gox_last').substr(1);
 	var html = usdbtc_str + " USD/BTC";
 	
@@ -88,7 +109,7 @@ function updateExchangeRates()
 	}
 	
 	$("#exchange_rates").html(html).animateHighlight();	
-	console.log("updateExchangeRates: " + html);
+	//console.log("updateExchangeRates: " + html);
 }
 
 if(Meteor.isClient) 
@@ -101,25 +122,31 @@ if(Meteor.isClient)
         return user.username;
     }
 	
-$.fn.animateHighlight = function(highlightColor, duration) {
-    var highlightBg = highlightColor || "#FFFF9C";
-    var animateMs = duration || 100;
-    var originalBg = this.css("background-color");
-    this.stop().animate({backgroundColor: highlightBg}, animateMs).animate({backgroundColor: originalBg}, animateMs);
-};	
+	$.fn.animateHighlight = function(highlightColor, duration) {
+		var highlightBg = highlightColor || "#FFFF9C";
+		var animateMs = duration || 100;
+		var originalBg = this.attr("animateHighlight_originalBg");
+		if(!originalBg)
+		{
+			originalBg = this.css("background-color");
+			this.attr("animateHighlight_originalBg", originalBg);
+		}
+		this.stop().animate({backgroundColor: highlightBg}, animateMs).animate({backgroundColor: originalBg}, animateMs);
+	};	
 
-$(function(){
-	refreshUSDILS();
-	window.setInterval(refreshUSDILS, 60*1000);
+	$(function(){
+		refreshUSDILS();
+		window.setInterval(refreshUSDILS, 60*1000);
 
-	refreshGox();
-	window.setInterval(refreshGox, 20*1000);	
-});
+		refreshGox();
+		window.setInterval(refreshGox, 20*1000);	
+	});
 
     Accounts.ui.config(
         {passwordSignupFields: 'USERNAME_AND_OPTIONAL_EMAIL'}
     );
-    getLocation();
+    
+	/*getLocation();*/
 
     Template.bid_list.username = getUsername;
     Template.ask_list.username = getUsername;
@@ -151,6 +178,12 @@ $(function(){
     Template.ask_info.is_mine = function () {
         return (this.user_id === Meteor.userId());
     };
+	Template.ask_info.price_str = function () {
+        return this.price ? this.price.toFixed(2) : 0;
+    };
+	Template.ask_info.size_str = function () {
+        return this.size ? this.size.toFixed(2) : 0;
+    };
     Template.ask_list.asks = function () {
         return Asks.find({}, {sort: {price: 1}});
     };
@@ -169,16 +202,16 @@ $(function(){
             Asks.remove(this._id);
         },
         'click input.up_price': function () {
-            Asks.update(this._id, {$inc: {price: 1.0}})
+            Asks.update(this._id, {$inc: {price: 0.10}})
         },
         'click input.down_price': function () {
-            Asks.update(this._id, {$inc: {price: -1.0}})
+            Asks.update(this._id, {$inc: {price: -0.10}})
         },
         'click input.up_size': function () {
-            Asks.update(this._id, {$inc: {size: .1}})
+            Asks.update(this._id, {$inc: {size: 0.1}})
         },
         'click input.down_size': function () {
-            Asks.update(this._id, {$inc: {size: -.1}})
+            Asks.update(this._id, {$inc: {size: -0.1}})
         }
     });
     Template.body.getAllOrders = function () {
