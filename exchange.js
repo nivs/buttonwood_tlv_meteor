@@ -18,6 +18,7 @@ function setGox(results) {
     data = JSON.parse(Session.get('gox').content);
     Session.set('gox_sell', data.return.buy.display_short);
     Session.set('gox_buy', data.return.sell.display_short);
+	Session.set('gox_last', data.return.sell.display_short);
 }
 function click_input_add(kind) {
     var user = Meteor.user();
@@ -49,8 +50,49 @@ function click_input_add(kind) {
     document.getElementById(kind + '_size').value = '';
 }
 
-if (Meteor.isClient) {
+function refreshGox()
+{
+console.log("refreshGox");
+    Meteor.http.get('http://data.mtgox.com/api/1/BTCUSD/ticker_fast', {}, function (error, result) {
+        if (result.statusCode === 200) 
+		{
+console.log("refreshGox statusCode=200");
+			setGox(result);
+			updateExchangeRates();			
+		}
+		else
+		{
+			console.log("refreshGox statusCode="+result.statusCode);
+		}
+    });
+}
 
+function refreshUSDILS()
+{
+	Meteor.call('getUSDILS', function(err, response) {
+		Session.set("USDILS", response);
+	});	
+}
+
+function updateExchangeRates()
+{
+	var usdbtc_str = Session.get('gox_last').substr(1);
+	var html = usdbtc_str + " USD/BTC";
+	
+	var usdils = Session.get("USDILS");
+	if(usdils)
+	{
+		var usdbtc = parseFloat(usdbtc_str);
+		var ilsbtc = usdbtc * usdils;
+		html += " &bull; " + ilsbtc.toFixed(2) + " ILS/BTC (" + usdils.toFixed(2) + " ILS/USD)";
+	}
+	
+	$("#exchange_rates").html(html).animateHighlight();	
+	console.log("updateExchangeRates: " + html);
+}
+
+if(Meteor.isClient) 
+{
     function getUsername() {
         var user = Meteor.user();
         if (user === null || typeof user === 'undefined') {
@@ -58,10 +100,22 @@ if (Meteor.isClient) {
         }
         return user.username;
     }
+	
+$.fn.animateHighlight = function(highlightColor, duration) {
+    var highlightBg = highlightColor || "#FFFF9C";
+    var animateMs = duration || 100;
+    var originalBg = this.css("background-color");
+    this.stop().animate({backgroundColor: highlightBg}, animateMs).animate({backgroundColor: originalBg}, animateMs);
+};	
 
-    Meteor.http.get('http://data.mtgox.com/api/1/BTCUSD/ticker_fast', {}, function (error, result) {
-        if (result.statusCode === 200) setGox(result);
-    });
+$(function(){
+	refreshUSDILS();
+	window.setInterval(refreshUSDILS, 60*1000);
+
+	refreshGox();
+	window.setInterval(refreshGox, 20*1000);	
+});
+
     Accounts.ui.config(
         {passwordSignupFields: 'USERNAME_AND_OPTIONAL_EMAIL'}
     );
@@ -149,5 +203,55 @@ if (Meteor.isClient) {
     });
 }
 
+if(Meteor.is_server) 
+{
+	var ExchangeRates = new Meteor.Collection("fx");
+	
+	Meteor.startup(function () 
+	{
+		Meteor.methods(
+		{
+			getUSDILS: function() 
+			{
+				// http://openexchangerates.org/api/latest.json?app_id=d725d8e16f4842f399b61e5ab7a21140
+				var now = new Date();
+				var rates = null;
+				var fx = ExchangeRates.findOne({name: 'fx'});
+				//console.log(fx ? fx.date : "not found");
+				if(!fx || (now - fx.date > 60*60*1000)) // cache for 1 hour
+				{
+					var result = Meteor.http.get('http://openexchangerates.org/api/latest.json?app_id=d725d8e16f4842f399b61e5ab7a21140');
+					//console.log(result.statusCode);
+					if(result.statusCode === 200) 
+					{
+						var data = JSON.parse(result.content);
+						rates = data.rates;
+					}
+					else
+					{
+						//throw new Meteor.Error(500, "openexchangerates returned " + result.statusCode);
+						return null;
+					}
+					
+					if(fx)
+					{
+						ExchangeRates.update(fx._id, {name: 'fx', date: now, rates: rates});
+					}
+					else
+					{
+						ExchangeRates.insert({name: 'fx', date: now, rates: rates});
+					}
+				}
+				else
+				{
+					rates = fx.rates;
+				}
+				
+				//console.log(rates.ILS);				
+				return rates.ILS;
+			}
+		});
+	});
+}
 
 

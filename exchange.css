@@ -8,13 +8,17 @@ h2 {
 	text-align: center;
 	color: #f8d16e;
 }
+h3 {
+	text-align: center;
+	color: #ddd;
+	font-size: 24px;
+}
 body {
     color: white;
 	font-size: 20;
 	text-shadow: 1px 1px 1px #000;
 	font-family: Tahoma;
-    /*background: url('/Images/hexabump.png');*/
-	background: url(Images/bg.jpg) no-repeat center center fixed; 
+	background: url(/img/bg.jpg) no-repeat center center fixed; 
 	-webkit-background-size: cover;
 	-moz-background-size: cover;
 	-o-background-size: cover;
