@@ -36,7 +36,7 @@
         }
 		
         function AddOrders() {
-            markers = []
+            markers = [];
             Bids.find().forEach(function (order){
                 var pos = new google.maps.LatLng(order.location[0], order.location[1]);
                 var marker = new google.maps.Marker({
@@ -80,13 +80,13 @@
 <body>
   <div id="header">
   <h1><a href="http://www.satoshisquare.org.il/">Satoshi Square Tel-Aviv</a></h1>
-  <h2>powered by <a href="https://github.com/joshuarossi/buttonwood_meteor">Project Buttonwood</a></h2>
   <h3><span id="exchange_rates"><span style="color:#eee">fetching exchange rates...</span></span></h3>
   </div>
   <center>{{loginButtons}} | <button type="button" data-toggle="modal" data-target="#myModal" id="map_btn">Map</button></center>
   <div id="wrapper">
   {{> body}}
   </div>
+  <h2>powered by <a href="https://github.com/joshuarossi/buttonwood_meteor">Project Buttonwood</a></h2>
 </body>
 
 <template name="body">
@@ -113,10 +113,10 @@
   <table id="bid_list">
   	<thead>
   		<tr>
-  			<th COLSPAN="3">BIDS</th>
+  			<th COLSPAN="3">BIDS | מעוניינים לקנות</th>
   		</tr>
   		<tr>
-  			<th>משתמש</th>
+  			<th>שם</th>
   			<th>מחיר</th>
   			<th>כמות</th>
   		</tr>
@@ -149,10 +149,10 @@
   <table id="ask_list">
   	<thead>
   		<tr>
-  			<th COLSPAN="3">ASKS</th>
+  			<th COLSPAN="3">ASKS | מעוניינים למכור</th>
   		</tr>
   		<tr>
-  			<th>משתמש</th>
+  			<th>שם</th>
   			<th>מחיר</th>
   			<th>כמות</th>
   		</tr>
