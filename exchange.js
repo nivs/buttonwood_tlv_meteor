@@ -38,12 +38,12 @@ function click_input_add(kind) {
         alert('price or size too small');
     }
     else {
-        position = [Session.get("location").latitude, Session.get("location").longitude];
+        var position = Session.get("location") ? [Session.get("location").latitude, Session.get("location").longitude] : null;
         if (kind == 'ask') {
-            Asks.insert({user_id: user._id, name: name, price: price, size: size});
+            Asks.insert({user_id: user._id, name: name, price: price, size: size, location: position});
         }
         if (kind == 'bid') {
-            Bids.insert({user_id: user._id, name: name, price: price, size: size});
+            Bids.insert({user_id: user._id, name: name, price: price, size: size, location: position});
         }
     }
     document.getElementById(kind + '_price').value = '';
