@@ -25,10 +25,12 @@ function click_input_add(kind) {
 	if(!price_str)
 	{
         if (kind == 'ask') {
-            price_str = Session.get('gox_buy');
+            //price_str = Session.get('gox_buy');
+			price_str = price_str = (Session.get('btce_buy') ? '$'+Session.get('btce_buy').toFixed(2) : Session.get('gox_buy'));
         }
 		else {
-			price_str = Session.get('gox_sell');
+			//price_str = Session.get('gox_sell');
+			price_str = (Session.get('btce_sell') ? '$'+Session.get('btce_sell').toFixed(2) : Session.get('gox_sell'));
 		}
 		if(price_str) price_str = price_str.substr(1);		
     }
@@ -61,24 +63,47 @@ function setGox(results) {
     data = JSON.parse(Session.get('gox').content);
     Session.set('gox_sell', data.return.buy.display_short);
     Session.set('gox_buy', data.return.sell.display_short);
-	Session.set('gox_last', data.return.sell.display_short);
+	Session.set('gox_last', data.return.last.display_short);
 }
 
-function refreshGox()
+function refreshTicker()
 {
 	//console.log("refreshGox");
     Meteor.http.get('http://data.mtgox.com/api/1/BTCUSD/ticker_fast', {}, function (error, result) {
-        if (result.statusCode === 200) 
-		{
+        if (result && (result.statusCode === 200))
+		{		
 			//console.log("refreshGox statusCode=200");
 			setGox(result);
 			updateExchangeRates();			
 		}
 		else
 		{
-			console.log("refreshGox statusCode="+result.statusCode);
+			console.log("refreshGox statusCode="+(result?result.statusCode:"null"));
 		}
     });
+
+	//console.log("refreshBTCE");
+    //Meteor.http.get('https://btc-e.com/api/2/btc_usd/ticker', {}, function (error, result) {
+	Meteor.call('getBTCE_BTCUSD', function(error, result) {	
+        if(result && (result.statusCode === 200))
+		{
+			//console.log("refreshBTCE statusCode=200");
+			setBTCE(result);
+			updateExchangeRates();			
+		}
+		else
+		{
+			console.log("refreshBTCE statusCode="+(result?result.statusCode:"null"));
+		}
+    });
+}
+
+function setBTCE(results) {
+    Session.set("btce", results);
+    data = JSON.parse(Session.get('btce').content);
+    Session.set('btce_sell', data.ticker.sell);
+    Session.set('btce_buy', data.ticker.buy);
+	Session.set('btce_last', data.ticker.last);
 }
 
 function refreshUSDILS()
@@ -89,26 +114,86 @@ function refreshUSDILS()
 	});	
 }
 
+var _last_exchange_rates_html = null;
+var _last_exchange_rates_update = null;
 function updateExchangeRates()
 {
+	var html = null;
+	var usdils = Session.get("USDILS");
+	
+	if(!Session.get('btce_last'))
+	{
+		console.log("btce_last is null in updateExchangeRates");
+	}
+	else
+	{			
+		var usdbtc = Session.get('btce_last');
+		var usdbtc_str = usdbtc.toFixed(2);
+		html = "<span class='exchange'>BTC-E</span><span class='currency'>:</span> " + usdbtc_str + " <span class='currency'>USD/BTC</span>";
+		
+		
+		if(usdils)
+		{			
+			var ilsbtc = usdbtc * usdils;
+			html += " <span class='currency'>&bull;</span> " + ilsbtc.toFixed(2) + " <span class='currency'>ILS/BTC</span>";
+		}
+	}
+	
 	if(!Session.get('gox_last'))
 	{
 		console.log("gox_last is null in updateExchangeRates");
-		return;
+	}
+	else
+	{	
+		if(html)
+		{
+			html += "<br>";
+		}
+		else
+		{
+			html = "";
+		}
+
+		var usdbtc_str = Session.get('gox_last').substr(1);
+		html += "<span class='exchange'>Mt.Gox</span><span class='currency'>:</span> " + usdbtc_str + " <span class='currency'>USD/BTC</span>";
+		
+		if(usdils)
+		{
+			var usdbtc = parseFloat(usdbtc_str);
+			var ilsbtc = usdbtc * usdils;
+			html += " <span class='currency'>&bull;</span> " + ilsbtc.toFixed(2) + " <span class='currency'>ILS/BTC</span>";
+		}
 	}
 	
-	var usdbtc_str = Session.get('gox_last').substr(1);
-	var html = usdbtc_str + " USD/BTC";
-	
-	var usdils = Session.get("USDILS");
-	if(usdils)
+	if(html)
 	{
-		var usdbtc = parseFloat(usdbtc_str);
-		var ilsbtc = usdbtc * usdils;
-		html += " &bull; " + ilsbtc.toFixed(2) + " ILS/BTC (" + usdils.toFixed(2) + " ILS/USD)";
+		if(usdils)
+		{
+			html += "<br><span class='ilsusd'>(" + usdils.toFixed(2) + " ILS/USD)</span>";
+		}		
+	}
+	else
+	{
+		html = '<span style="color:#eee">fetching exchange rates...</span>';
 	}
 	
-	$("#exchange_rates").html(html).animateHighlight();	
+	var now = new Date();
+	$("#exchange_rates").html(html);	
+	if(html != _last_exchange_rates_html)
+	{
+		if(!_last_exchange_rates_update || (now - _last_exchange_rates_update > 1*1000))
+		{
+			$("#exchange_rates").animateHighlight();	
+		}
+		_last_exchange_rates_update = now;
+		_last_exchange_rates_html = html;
+	}
+	else if(_last_exchange_rates_update && (now - _last_exchange_rates_update > 20*1000))
+	{
+		_last_exchange_rates_update = now;
+		$("#exchange_rates").animateHighlight("#888");	
+	}
+	
 	//console.log("updateExchangeRates: " + html);
 }
 
@@ -138,8 +223,8 @@ if(Meteor.isClient)
 		refreshUSDILS();
 		window.setInterval(refreshUSDILS, 60*1000);
 
-		refreshGox();
-		window.setInterval(refreshGox, 20*1000);	
+		refreshTicker();
+		window.setInterval(refreshTicker, 20*1000);	
 	});
 
     Accounts.ui.config(
@@ -161,11 +246,21 @@ if(Meteor.isClient)
             return "other"
         }
     };
+    Template.bid_list.is_mine_or_admin = function () {
+        if (this.name === getUsername()) {
+            return "mine"
+        }
+        else {
+            return "other"
+        }
+    };	
     Template.bid_list.gox_price = function () {
-        return Session.get('gox_sell');
+        //return Session.get('gox_sell');
+		return (Session.get('btce_sell') ? '$'+Session.get('btce_sell').toFixed(2) : Session.get('gox_sell'));
     }
     Template.ask_list.gox_price = function () {
-        return Session.get('gox_buy');
+        //return Session.get('gox_buy');
+		return (Session.get('btce_buy') ? '$'+Session.get('btce_buy').toFixed(2) : Session.get('gox_buy'));
     }
     Template.ask_list.is_mine = function () {
         if (this.name === getUsername()) {
@@ -178,6 +273,9 @@ if(Meteor.isClient)
     Template.ask_info.is_mine = function () {
         return (this.user_id === Meteor.userId());
     };
+    Template.ask_info.is_mine_or_admin = function () {
+        return ((this.user_id === Meteor.userId()) || (getUsername() == 'nivs'));
+    };	
 	Template.ask_info.price_str = function () {
         return this.price ? this.price.toFixed(2) : 0;
     };
@@ -255,7 +353,7 @@ if(Meteor.is_server)
 				{
 					var result = Meteor.http.get('http://openexchangerates.org/api/latest.json?app_id=d725d8e16f4842f399b61e5ab7a21140');
 					//console.log(result.statusCode);
-					if(result.statusCode === 200) 
+					if(result && (result.statusCode === 200))
 					{
 						var data = JSON.parse(result.content);
 						rates = data.rates;
@@ -282,6 +380,35 @@ if(Meteor.is_server)
 				
 				//console.log(rates.ILS);				
 				return rates.ILS;
+			},
+			
+			getBTCE_BTCUSD: function()
+			{
+				var now = new Date();
+				var btce = ExchangeRates.findOne({name: 'btce_btcusd'});
+				if(!btce || (now - btce.date > 10*1000)) // cache for 10 seconds
+				{
+					//console.log("fetching btc-e ticker");
+					var result = Meteor.http.get('https://btc-e.com/api/2/btc_usd/ticker');
+					if(result && (result.statusCode === 200))
+					{
+						if(btce)
+						{
+							ExchangeRates.update(btce._id, {name: 'btce_btcusd', date: now, data: result});
+						}
+						else
+						{
+							ExchangeRates.insert({name: 'btce_btcusd', date: now, data: result});
+						}
+					}
+					//console.log(result);
+					return result;
+				}
+				else
+				{
+					//console.log("returning cached btc-e ticker");
+					return btce.data;
+				}
 			}
 		});
 	});

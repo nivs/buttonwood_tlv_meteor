@@ -90,6 +90,23 @@ h3 {
 	text-align: center;
 	color: #ddd;
 	font-size: 1.6em;
+	line-height: 1.1em;
+}
+
+.exchange {
+	color: #ffeab0;
+}
+
+.ilsusd {
+	font-size:0.7em;
+	color: #aaa;
+	position: relative;
+	top: -4px;
+}
+
+.currency {
+	color: #aaa;
+	font-size: 0.8em;
 }
 
 #login-buttons {

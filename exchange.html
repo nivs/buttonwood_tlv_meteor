@@ -229,7 +229,7 @@
 
 <template name="ask_info">
  <td>
-  {{#if is_mine}}
+  {{#if is_mine_or_admin}}
    <input id="{{_id}}" type="button" class="remove" value="X"/>
   {{/if}}
   {{name}}
