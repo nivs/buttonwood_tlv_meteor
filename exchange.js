@@ -26,11 +26,11 @@ function click_input_add(kind) {
 	{
         if (kind == 'ask') {
             //price_str = Session.get('gox_buy');
-			price_str = price_str = (Session.get('btce_buy') ? '$'+Session.get('btce_buy').toFixed(2) : Session.get('gox_buy'));
+			price_str = getPriceAsk();
         }
 		else {
 			//price_str = Session.get('gox_sell');
-			price_str = (Session.get('btce_sell') ? '$'+Session.get('btce_sell').toFixed(2) : Session.get('gox_sell'));
+			price_str = getPriceBid();
 		}
 		if(price_str) price_str = price_str.substr(1);		
     }
@@ -58,19 +58,25 @@ function click_input_add(kind) {
     document.getElementById(kind + '_size').value = '';
 }
 
-function setGox(results) {
-    Session.set("gox", results);
-    data = JSON.parse(Session.get('gox').content);
-    Session.set('gox_sell', data.return.buy.display_short);
-    Session.set('gox_buy', data.return.sell.display_short);
-	Session.set('gox_last', data.return.last.display_short);
-}
-
 function refreshTicker()
 {
+	//console.log("refreshBTCAVG");
+    Meteor.http.get('http://api.bitcoinaverage.com/ticker/USD', {}, function (error, result) {
+        if(result && (result.statusCode === 200))
+		{		
+			//console.log("refreshBTCAVG statusCode=200");
+			setBTCAVG(result);
+			updateExchangeRates();			
+		}
+		else
+		{
+			console.log("refreshBTCAVG statusCode="+(result?result.statusCode:"null"));
+		}
+    });
+
 	//console.log("refreshGox");
     Meteor.http.get('http://data.mtgox.com/api/1/BTCUSD/ticker_fast', {}, function (error, result) {
-        if (result && (result.statusCode === 200))
+        if(result && (result.statusCode === 200))
 		{		
 			//console.log("refreshGox statusCode=200");
 			setGox(result);
@@ -82,6 +88,7 @@ function refreshTicker()
 		}
     });
 
+	/*
 	//console.log("refreshBTCE");
     //Meteor.http.get('https://btc-e.com/api/2/btc_usd/ticker', {}, function (error, result) {
 	Meteor.call('getBTCE_BTCUSD', function(error, result) {	
@@ -96,14 +103,67 @@ function refreshTicker()
 			console.log("refreshBTCE statusCode="+(result?result.statusCode:"null"));
 		}
     });
+	*/
+	
+	//console.log("refreshBit2C");
+	Meteor.call('getBit2C_BTCILS', function(error, result) {	
+        if(result && (result.statusCode === 200))
+		{
+			//console.log("refreshBTCE refreshBit2C=200");
+			setBit2C(result);
+			updateExchangeRates();			
+		}
+		else
+		{
+			console.log("refreshBit2C statusCode="+(result?result.statusCode:"null"));
+		}
+    });	
+}
+
+function removeCommas(str) 
+{
+	if(!str) return null;
+    return str.replace(/,/g, '');
+}
+
+function setGox(results) {
+    //Session.set("gox", results);
+    data = JSON.parse(results.content);
+    Session.set('gox_sell', removeCommas(data.return.sell.display_short));
+    Session.set('gox_buy', removeCommas(data.return.buy.display_short));
+	Session.set('gox_last', removeCommas(data.return.last.display_short));
 }
 
 function setBTCE(results) {
-    Session.set("btce", results);
-    data = JSON.parse(Session.get('btce').content);
+    //Session.set("btce", results);
+    data = JSON.parse(results.content);
     Session.set('btce_sell', data.ticker.sell);
     Session.set('btce_buy', data.ticker.buy);
 	Session.set('btce_last', data.ticker.last);
+}
+
+function setBTCAVG(results) {
+    //Session.set("btcavg", results);
+    data = JSON.parse(results.content);
+    Session.set('btcavg_sell', data.ask);
+    Session.set('btcavg_buy', data.bid);
+	Session.set('btcavg_last', data.last);
+}
+
+function setBit2C(results) {
+	// GET https://www.bit2c.co.il/Exchanges/NIS/Ticker.json
+	// Returns JSON dictionary:
+	// ll - last BTC price
+	// av - last 24 hours price avarage
+	// a - last 24 hours volume
+	// h - highest buy order
+	// l - lowest sell order
+
+    //Session.set("bit2c", results);
+    data = JSON.parse(results.content);
+    Session.set('bit2c_sell', data.l);
+    Session.set('bit2c_buy', data.h);
+	Session.set('bit2c_last', data.ll);
 }
 
 function refreshUSDILS()
@@ -121,16 +181,50 @@ function updateExchangeRates()
 	var html = null;
 	var usdils = Session.get("USDILS");
 	
-	if(!Session.get('btce_last'))
+	if(!Session.get('btcavg_last'))
 	{
-		console.log("btce_last is null in updateExchangeRates");
+		console.log("btcavg_last is null in updateExchangeRates");
 	}
 	else
 	{			
+		if(html)
+		{
+			html += "<br>";
+		}
+		else
+		{
+			html = "";
+		}
+
+		var usdbtc_str = Session.get('btcavg_last');
+		html += "<span class='exchange'>BitcoinAverage</span><span class='currency'>:</span> " + usdbtc_str + " <span class='currency'>USD/BTC</span>";		
+		
+		if(usdils)
+		{			
+			var usdbtc = parseFloat(usdbtc_str);
+			var ilsbtc = usdbtc * usdils;
+			html += " <span class='currency'>&bull;</span> " + ilsbtc.toFixed(2) + " <span class='currency'>ILS/BTC</span>";
+		}
+	}
+	
+	if(!Session.get('btce_last'))
+	{
+		//console.log("btce_last is null in updateExchangeRates");
+	}
+	else
+	{			
+		if(html)
+		{
+			html += "<br>";
+		}
+		else
+		{
+			html = "";
+		}
+
 		var usdbtc = Session.get('btce_last');
 		var usdbtc_str = usdbtc.toFixed(2);
-		html = "<span class='exchange'>BTC-E</span><span class='currency'>:</span> " + usdbtc_str + " <span class='currency'>USD/BTC</span>";
-		
+		html += "<span class='exchange'>BTC-E</span><span class='currency'>:</span> " + usdbtc_str + " <span class='currency'>USD/BTC</span>";		
 		
 		if(usdils)
 		{			
@@ -165,6 +259,34 @@ function updateExchangeRates()
 		}
 	}
 	
+	if(!Session.get('bit2c_last'))
+	{
+		console.log("bit2c_last is null in updateExchangeRates");
+	}
+	else
+	{	
+		if(html)
+		{
+			html += "<br>";
+		}
+		else
+		{
+			html = "";
+		}
+
+		var ilsbtc = Session.get('bit2c_last');
+		html += "<span class='exchange'>Bit2C</span><span class='currency'>:</span> ";
+
+		if(usdils)
+		{			
+			var usdbtc = ilsbtc / usdils;
+			html += usdbtc.toFixed(2) + " <span class='currency'>USD/BTC</span> <span class='currency'>&bull;</span> ";
+		}
+
+		var ilsbtc_str = ilsbtc.toFixed(2);
+		html += ilsbtc_str + " <span class='currency'>ILS/BTC</span>";		
+	}
+	
 	if(html)
 	{
 		if(usdils)
@@ -195,6 +317,38 @@ function updateExchangeRates()
 	}
 	
 	//console.log("updateExchangeRates: " + html);
+}
+
+function getPriceAsk()
+{
+	if(Session.get('btcavg_sell'))
+	{
+		return '$'+Session.get('btcavg_sell');
+	}
+	else if(Session.get('btce_sell'))
+	{
+		return '$'+Session.get('btce_sell').toFixed(2);
+	}
+	else
+	{
+		return Session.get('gox_sell');
+	}
+}
+
+function getPriceBid()
+{
+	if(Session.get('btcavg_buy'))
+	{
+		return '$'+Session.get('btcavg_buy');
+	}
+	else if(Session.get('btce_buy'))
+	{
+		return '$'+Session.get('btce_buy').toFixed(2);
+	}
+	else
+	{
+		return Session.get('gox_buy');
+	}
 }
 
 if(Meteor.isClient) 
@@ -256,11 +410,11 @@ if(Meteor.isClient)
     };	
     Template.bid_list.gox_price = function () {
         //return Session.get('gox_sell');
-		return (Session.get('btce_sell') ? '$'+Session.get('btce_sell').toFixed(2) : Session.get('gox_sell'));
+		return getPriceBid();
     }
     Template.ask_list.gox_price = function () {
         //return Session.get('gox_buy');
-		return (Session.get('btce_buy') ? '$'+Session.get('btce_buy').toFixed(2) : Session.get('gox_buy'));
+		return getPriceAsk();
     }
     Template.ask_list.is_mine = function () {
         if (this.name === getUsername()) {
@@ -408,6 +562,35 @@ if(Meteor.is_server)
 				{
 					//console.log("returning cached btc-e ticker");
 					return btce.data;
+				}
+			},
+			
+			getBit2C_BTCILS: function()
+			{
+				var now = new Date();
+				var bit2c = ExchangeRates.findOne({name: 'bit2c_btcils'});
+				if(!bit2c || (now - bit2c.date > 10*1000)) // cache for 10 seconds
+				{
+					//console.log("fetching bit2c ticker");
+					var result = Meteor.http.get('https://www.bit2c.co.il/Exchanges/NIS/Ticker.json');
+					if(result && (result.statusCode === 200))
+					{
+						if(bit2c)
+						{
+							ExchangeRates.update(bit2c._id, {name: 'bit2c_btcils', date: now, data: result});
+						}
+						else
+						{
+							ExchangeRates.insert({name: 'bit2c_btcils', date: now, data: result});
+						}
+					}
+					//console.log(result);
+					return result;
+				}
+				else
+				{
+					//console.log("returning cached bit2c ticker");
+					return bit2c.data;
 				}
 			}
 		});
