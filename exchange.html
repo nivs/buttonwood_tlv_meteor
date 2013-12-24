@@ -145,10 +145,10 @@
 <!--end map stuff-->
  <div class="container">
   <div class="row">
-    <div class="span5 offset1">
+    <div class="span4 offset2">
     {{> bid_list}}
    </div>
-   <div class="span5">
+   <div class="span4">
     {{> ask_list}}
    </div>
   </div>
@@ -159,20 +159,20 @@
   <table id="bid_list">
   	<thead>
   		<tr>
-  			<th COLSPAN="3">BIDS | מעוניינים לקנות</th>
+  			<th COLSPAN="2">BIDS | מעוניינים לקנות</th>
   		</tr>
   		<tr>
   			<th>שם</th>
-  			<th>מחיר</th>
+  			<!--th>מחיר</th-->
   			<th>כמות</th>
   		</tr>
   		<tr>
   			<th>{{username}}</th>
-        <th>
+        <!--th>
          <form action="javascript:null" class="form-inline" style="margin-bottom:0; padding:5px">
           <input type="text" id="bid_price" class="input-medium" Placeholder="{{gox_price}}"/>
          </form>
-        </th>
+        </th-->
         <th>
          <form action="javascript:null" class="form-inline" style="margin-bottom:0; padding:5px">
           <input type="text" id="bid_size" class="input-small" Placeholder="0" />
@@ -195,20 +195,20 @@
   <table id="ask_list">
   	<thead>
   		<tr>
-  			<th COLSPAN="3">ASKS | מעוניינים למכור</th>
+  			<th COLSPAN="2">ASKS | מעוניינים למכור</th>
   		</tr>
   		<tr>
   			<th>שם</th>
-  			<th>מחיר</th>
+  			<!--th>מחיר</th-->
   			<th>כמות</th>
   		</tr>
   		<tr>
   			<th>{{username}}</th>
-        <th>
+        <!--th>
          <form action="javascript:null" class="form-inline" style="margin-bottom:0; padding:5px">
           <input type="text" id="ask_price" class="input-medium" Placeholder="{{gox_price}}"/>
          </form>
-        </th>
+        </th-->
         <th>
          <form action="javascript:null" class="form-inline" style="margin-bottom:0; padding:5px">
           <input type="text" id="ask_size" class="input-small" Placeholder="0" />
@@ -234,9 +234,9 @@
   {{/if}}
   {{name}}
  </td>
- <td>{{#if is_mine}}<input id="{{_id}}" type = "button" class = "up_price" value="&#x21e7;">{{/if}}
+ <!--td>{{#if is_mine}}<input id="{{_id}}" type = "button" class = "up_price" value="&#x21e7;">{{/if}}
      ${{price_str}}
-     {{#if is_mine}}<input id="{{_id}}" type = "button" class = "down_price" value="&#x21e9;">{{/if}}</td>
+     {{#if is_mine}}<input id="{{_id}}" type = "button" class = "down_price" value="&#x21e9;">{{/if}}</td-->
  <td>{{#if is_mine}}<input id="{{_id}}" type = "button" class = "up_size" value = "&#x21e7;">{{/if}}
      {{size_str}}
      {{#if is_mine}}<input id="{{_id}}" type = "button" class = "down_size" value = "&#x21e9;">{{/if}}</td>
